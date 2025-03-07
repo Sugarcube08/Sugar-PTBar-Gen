@@ -1,4 +1,3 @@
-```markdown
 # 🏷️ Sugar-PTBar-Gen 
 
 ## 🚀 Introduction
@@ -113,15 +112,14 @@ pip install -r requirements.txt
 
 ## 📜 License
 This project is open-source. Modify and distribute as needed.
-```
 
----                                         
+---
 # Made with ❤️ by SugarCube
-	---
+---
 
-	---
+---
 ## ☕ Support Me
 If you like this project, consider buying me
  a coffee!
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support%20Me-orange?style=flat-square&logo=buy-me-a-coffee)](https://www.buymeacoffee.com/sugarcube08)   
-	---
+---
