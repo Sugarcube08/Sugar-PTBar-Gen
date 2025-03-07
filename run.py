@@ -7,10 +7,101 @@ from reportlab.lib.utils import ImageReader
 from reportlab.graphics.barcode import code128  # Import barcode generator
 from PyPDF2 import PdfReader, PdfWriter
 
+def auto_wrap_text(canvas, text, x, y, max_width, font_size , font="Helvetica", line_spacing=2):
+    """
+    Automatically wraps text within max_width and draws it on the canvas.
+    - canvas: PDF canvas object
+    - text: The text to wrap
+    - x, y: Starting position
+    - max_width: Maximum width before wrapping
+    - font: Font type
+    - font_size: Font size
+    - line_spacing: Space between wrapped lines
+    """
+    words = text.split()
+    current_line = ""
+    lines = []
+    
+    canvas.setFont(font, font_size)
+
+    for word in words:
+        if canvas.stringWidth(current_line + " " + word, font, font_size) < max_width:
+            current_line += " " + word if current_line else word
+        else:
+            lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
+
+    for i, line in enumerate(lines):
+        canvas.drawString(x, y - (i * (font_size + line_spacing)), line)  # Draw wrapped text line
+
+
+
 # DO NOT THOUCH THIS FUNCTION NEVER EVER IN THE HELL, 
-# TRESSPASSERS WILL SHOT DEAD
-# SURVIVORS WILL SHOT AGAIN
-def create_label(output_pdf, product, d_no, size, mrp, barcode_value, logo_path):
+# TRESSPASSERS WILL BE SHOT DEAD
+# SURVIVORS WILL BE SHOT AGAIN
+def create_UniLabel(output_pdf, product, color, size, Net_Qty, mrp, Address , barcode_value, logo_path):
+    """
+    Creates a label PDF and appends it to output_pdf (labels.pdf)
+    """
+    # Label dimensions (in mm)
+    label_width, label_height = 80 * mm, 55 * mm
+
+    # Define temp file path
+    temp_pdf = os.path.join(os.getcwd(), "temp/temp.pdf")
+
+    # Ensure temp directory exists
+    os.makedirs("temp", exist_ok=True)
+
+    # ✅ Create a PDF canvas for temp file
+    c = canvas.Canvas(temp_pdf, pagesize=(label_width, label_height))
+
+    # Draw logo (centered at top)
+    if logo_path and os.path.exists(logo_path):
+        logo = ImageReader(logo_path)
+        logo_width, logo_height = 45 * mm, 8 * mm  # Adjust as needed
+        c.drawImage(logo, (label_width - logo_width) / 2, label_height - 10 * mm, width=logo_width, height=logo_height)
+
+    # Define text position
+    text_x, text_y = 3 * mm, label_height - 13* mm
+    max_width = label_width - 10 * mm
+    # Add text fields
+    c.setFont("Helvetica", 5)
+    auto_wrap_text(c, f"Product Code : {product}", text_x, text_y, max_width,font_size=8)
+    c.drawString(text_x, text_y - 4 * mm, f"Color : {color}")
+    c.setFont("Helvetica", 12)
+    c.drawString(text_x, text_y - 9 * mm, f"Size    : {size}")
+    c.setFont("Helvetica", 8)
+    c.drawString(text_x, text_y - 12 * mm, f"Net Qty   : {Net_Qty}")
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(text_x, text_y - 17 * mm, f"MRP   : {mrp}")
+    c.setFont("Helvetica", 10)
+    auto_wrap_text(c, f"Address : {Address}", text_x, text_y - 22 * mm, max_width, font_size=8)
+    # Generate and draw barcode (centered)
+    barcode = code128.Code128(barcode_value, barWidth=0.15 * mm, barHeight=6 * mm)
+    barcode_x = (label_width - barcode.width) / 2  # Center horizontally
+    barcode_y = text_y - 35 * mm  # Adjust barcode position
+    barcode.drawOn(c, barcode_x, barcode_y)
+
+    # Draw barcode value (centered below barcode)
+    c.setFont("Courier-Bold", 10)
+    barcode_text_x = (label_width - c.stringWidth(barcode_value, "Courier-Bold", 10)) / 2
+    barcode_text_y = barcode_y - 4 * mm  # Position slightly below barcode
+    c.drawString(barcode_text_x, barcode_text_y, barcode_value)
+
+    # ✅ Save the temporary PDF file
+    c.showPage()
+    c.save()
+
+    # ✅ Merge temp PDF with labels.pdf
+    merge_pdfs(temp_pdf, output_pdf)
+
+
+# DO NOT THOUCH THIS FUNCTION NEVER EVER IN THE HELL, 
+# TRESSPASSERS WILL BE SHOT DEAD
+# SURVIVORS WILL BE SHOT AGAIN
+def create_PTLabel(output_pdf, product, d_no, size, mrp, barcode_value, logo_path):
     """
     Creates a label PDF and appends it to output_pdf (labels.pdf)
     """
@@ -99,6 +190,24 @@ def merge_pdfs(temp_pdf, output_pdf):
     # ✅ Delete temp file after merging
     os.remove(temp_pdf)
 
+def Unilabel(data):
+    config = load_config("assets/config.json")
+    product = search_csv("assets/database.csv", "SKU", data)
+    if product:
+        create_UniLabel(
+                        output_pdf="labels.pdf",
+                        product=product.get("SKU", "Unknown"),
+                        color=product.get("COLOR", "Unknown").upper(),
+                        size=product.get("SIZE", "Unknown").upper(),
+                        Net_Qty=1,
+                        mrp=product.get("MRP", "Unknown"),
+                        Address=config.get("Address", "Unknown"),
+                        barcode_value=product.get("SKU", "Unknown").strip(),
+                        logo_path="assets/logo.png"  # Ensure this file exists
+                    )
+    else:
+        print("Product Not Found")
+        return
 
 def create_ptfile(data):
     if not os.path.exists('ptfile.csv'):
@@ -175,70 +284,119 @@ def barcode_updater():
         json.dump(config, file)
     return str(barcode)
 
-def ptfile_data():
+def ptfile_data(search_value):
     # Search for product in CSV file
     csv_filename = "assets/database.csv"
     search_column = "SKU"
-    while True:
-        flag = input("Press Enter to Scan SKU or type exit to leave: ").strip().lower()
-        if flag == "exit":
-            break
-        else:
+    product = search_csv(csv_filename, search_column, search_value)
+    config = load_config("assets/config.json")
+    data = []
+    data.append(barcode_updater())
+    data.append(config.get("Season", "").strip() or "")
+    data.append(config.get("Group", "Unknown").strip() or "")
+    data.append(product.get("HSN CODE", "Unknown").strip() or "")
+    data.append(product.get("Item Type", "Unknown").strip() or "")
+    data.append(product.get("SKU", "Unknown").strip() or "")
+    data.append(config.get("Brand", "Unknown").strip())
+    data.append(product.get("Sub Brand", "").strip() or "")
+    data.append(product.get("Pattern", "Unknown").strip() or "")
+    data.append(product.get("Design", "Unknown").strip() or "")
+    data.append(product.get("Section", "").strip() or "")
+    data.append(product.get("COLOR", "Unknown").strip() or "")
+    data.append(product.get("Sub Category", "").strip() or "")
+    data.append(product.get("Unit", "PCS").strip() or "PCS")
+    data.append(product.get("SIZE", "Unknown").strip() or "")
+    data.append(input("Enter Discount %: ").strip() or "0")
+    data.append(product.get("MRP", "Unknown").strip() or "")
+    type = input("Enter Type of GST\n1. for INCLUSIVE\n2. for EXCLUSIVE\n(Leave Leave Empty for1)\n>>> ").strip() or "1"
+    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15]), type))
+    data.append(input("Enter Available Quantity(or leave for 1): ").strip() or "1")
+    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15])))
+    data.append(GST_calculator(data[17], type))
+    data.append(input("Enter Purchase Type(Or Leave of GST): ").strip() or "GST")
+    data.append(config.get("Supplier Name", "Unknown"))
+    data.append(input("Enter Format(Or Leave for SHOP PURCHASE): ").strip() or "SHOP PURCHASE")
+    data.append(input("Enter LT(Or Leave for 0): ").strip() or "0")
+    data.append(config.get("Barcode Type", "Unknown"))
+    data.append(config.get("Location", "Unknown"))
+    create_PTLabel(
+                    output_pdf="PT_labels.pdf",
+                    product=data[5].upper(),
+                    d_no=data[9].upper(),
+                    size=data[14].upper(),
+                    mrp=data[16],
+                    barcode_value=data[0],
+                    logo_path="assets/logo.png"  # Ensure this file exists
+                )
+    create_ptfile(data)
+            
+def manual_mode():
+      while True:
+        OP = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
+        if OP == "1":
+            while True: 
+                data = input("Enter of Scan SKU to print or type exit to leave: ")
+                if data.lower() == "exit":
+                    break
+                elif data.lower() != "exit":
+                    Unilabel(data)
+                    continue
+                else:
+                    print("Invalid Input")
+                    continue
+        elif OP == "2":
             while True:
-                search_value = input("Enter or Scan SKU to search: ")
-                if search_value:
+                flag = input("Press Enter to Scan SKU or type exit to leave: ").strip().lower()
+                if flag == "exit":
                     break
                 else:
-                    print("No SKU Entered")
-                    continue   
-            product = search_csv(csv_filename, search_column, search_value)
-            config = load_config("assets/config.json")
-            data = []
-            data.append(barcode_updater())
-            data.append(config.get("Season", "").strip() or "")
-            data.append(config.get("Group", "Unknown").strip() or "")
-            data.append(product.get("HSN CODE", "Unknown").strip() or "")
-            data.append(product.get("Item Type", "Unknown").strip() or "")
-            data.append(product.get("SKU", "Unknown").strip() or "")
-            data.append(config.get("Brand", "Unknown").strip())
-            data.append(product.get("Sub Brand", "").strip() or "")
-            data.append(product.get("Pattern", "Unknown").strip() or "")
-            data.append(product.get("Design", "Unknown").strip() or "")
-            data.append(product.get("Section", "").strip() or "")
-            data.append(product.get("COLOR", "Unknown").strip() or "")
-            data.append(product.get("Sub Category", "").strip() or "")
-            data.append(product.get("Unit", "PCS").strip() or "PCS")
-            data.append(product.get("SIZE", "Unknown").strip() or "")
-            data.append(input("Enter Discount %: ").strip() or "0")
-            data.append(product.get("MRP", "Unknown").strip() or "")
-            type = input("Enter Type of GST\n1. for INCLUSIVE\n2. for EXCLUSIVE\n(Leave Leave Empty for1)\n>>> ").strip() or "1"
-            data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15]), type))
-            data.append(input("Enter Available Quantity(or leave for 1): ").strip() or "1")
-            data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15])))
-            data.append(GST_calculator(data[17], type))
-            data.append(input("Enter Purchase Type(Or Leave of GST): ").strip() or "GST")
-            data.append(config.get("Supplier Name", "Unknown"))
-            data.append(input("Enter Format(Or Leave for SHOP PURCHASE): ").strip() or "SHOP PURCHASE")
-            data.append(input("Enter LT(Or Leave for 0): ").strip() or "0")
-            data.append(config.get("Barcode Type", "Unknown"))
-            data.append(config.get("Location", "Unknown"))
-            create_label(
-                            output_pdf="labels.pdf",
-                            product=data[5].upper(),
-                            d_no=data[9].upper(),
-                            size=data[14].upper(),
-                            mrp=data[16],
-                            barcode_value=data[0],
-                            logo_path="assets/logo.png"  # Ensure this file exists
-                        )
+                    while True:
+                        search_value = input("Enter or Scan SKU to search: ")
+                        if search_value:
+                            ptfile_data(search_value)
+                            break
+                        else:
+                            print("No SKU Entered")
+                            continue   
+        elif OP == "0":
+            break
 
-            create_ptfile(data)
+def auto_mode():
+    while True:
+        OP = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
+        if OP == "1":
+            while True: 
+                opr = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
+                if opr == "1":
+                    with open('UNI-operation.csv', 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)
+                        for row in reader:
+                            Unilabel(*row)
+                        
+                elif opr == "2":
+                    with open('UNI-operation.csv', 'w') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(['SKU'])
+                elif opr == "0":
+                    break
+                else:
+                    print("Invalid Operation")
+                    continue
+        elif OP == "2":
+            ptfile_data()
+        elif OP == "0":
+            break
+    
 
 if __name__ == '__main__':
     while True:
-        OP = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n>>> ")
-        if OP == "1":
-            barcode_updater()
-        elif OP == "2":
-            ptfile_data()
-    
+        mode = input("Enter Mode\n1. for Manual\n2. for Automatic Mode\n>>> ")
+        if mode == "1":
+            manual_mode()
+        elif mode == "2":
+            auto_mode()
+        else:
+            print("Invalid Mode")
+            continue
+        break
