@@ -7,7 +7,7 @@ def check_file(file_path):
     if not os.path.exists(file_path):
         with open(file_path, 'w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['Design', 'SKU' , 'Product Name' , 'SIZE' , 'COLOR' , 'MRP' , 'Item Type' , 'Pattern' , 'BRAND', 'HSN CODE'])
+            writer.writerow(['DESIGN NO.', 'SKU' , 'Product Name' , 'SIZE' , 'COLOR' , 'MRP' , 'Item Type' , 'Pattern' , 'BRAND', 'HSN CODE','REMARKS(leave empty)'])
             print('File created successfully')
         return True
     else:

@@ -195,7 +195,7 @@ def Unilabel(data):
     product = search_csv("assets/database.csv", "SKU", data)
     if product:
         create_UniLabel(
-                        output_pdf="labels.pdf",
+                        output_pdf="UNI_labels.pdf",
                         product=product.get("SKU", "Unknown"),
                         color=product.get("COLOR", "Unknown").upper(),
                         size=product.get("SIZE", "Unknown").upper(),
@@ -214,16 +214,17 @@ def create_ptfile(data):
         with open('ptfile.csv', 'w') as f:
             writer = csv.writer(f)
             writer.writerow(['BarcodeNo.', 'Season', 'Group', 'HSN Code','Item Type', 'Item Detail', 'Brand', 'Sub Brand', 'Pattern', 'Design', 'Section', 'Color', 'Sub Category', 'Unit', 'Size', 'Discount %', 'MRP','Rate', 'Available Quantity', 'Amount', 'GST %',  'Purchase Type', 'Supplier Name', 'Fomate', 'LT', 'Barcode Type', 'Location'])
-        add_data_ptfile(data)    
+        with open('ptfile.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(data)
+    
     else:  
-        add_data_ptfile(data)
-
-
-def add_data_ptfile(data):
-  with open('ptfile.csv', 'a') as f:
+        with open('ptfile.csv', 'a') as f:
             writer = csv.writer(f)
             writer.writerow(data)
 
+
+  
 def load_config(config_path):
     """Loads brand configuration from JSON file."""
     try:
@@ -329,6 +330,52 @@ def ptfile_data(search_value):
                     logo_path="assets/logo.png"  # Ensure this file exists
                 )
     create_ptfile(data)
+
+def auto_ptfile_data(row, search_value):
+    csv_filename = "assets/database.csv"
+    search_column = "SKU"
+    product = search_csv(csv_filename, search_column, search_value)
+    print(product)
+    config = load_config("assets/config.json")
+    data = []
+    data.append(barcode_updater())
+    data.append(config.get("Season", "").strip() or "")
+    data.append(config.get("Group", "Unknown").strip() or "")
+    data.append(product.get("HSN CODE", "Unknown").strip() or "")
+    data.append(product.get("Item Type", "Unknown").strip() or "")
+    data.append(product.get("SKU", "Unknown").strip() or "")
+    data.append(product.get("BRAND", "Unknown").strip())
+    data.append(product.get("Sub Brand", "").strip() or "")
+    data.append(product.get("Pattern", "Unknown").strip() or "")
+    data.append(product.get("DESIGN NO.", "Unknown").strip() or "")
+    data.append(product.get("Section", "").strip() or "")
+    data.append(product.get("COLOR", "Unknown").strip() or "")
+    data.append(product.get("Sub Category", "").strip() or "")
+    data.append(product.get("Unit", "PCS").strip() or "PCS")
+    data.append(product.get("SIZE", "Unknown").strip() or "")
+    data.append(row[1].strip() or "0")
+    data.append(product.get("MRP", "Unknown").strip() or "")
+    type = row[2].strip() or "1"
+    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15]), type))
+    data.append(row[3].strip() or "1")
+    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15])))
+    data.append(GST_calculator(data[17], type))
+    data.append(row[4].strip() or "GST")
+    data.append(config.get("Supplier Name", "Unknown"))
+    data.append(row[5].strip() or "SHOP PURCHASE")
+    data.append(row[6].strip() or "0")
+    data.append(config.get("Barcode Type", "Unknown"))
+    data.append(config.get("Location", "Unknown"))
+    create_PTLabel(
+                    output_pdf="PT_labels.pdf",
+                    product=data[5].upper(),
+                    d_no=data[9].upper(),
+                    size=data[14].upper(),
+                    mrp=data[16],
+                    barcode_value=data[0],
+                    logo_path="assets/logo.png"  # Ensure this file exists
+                )
+    create_ptfile(data)
             
 def manual_mode():
       while True:
@@ -372,7 +419,7 @@ def auto_mode():
                         reader = csv.reader(f)
                         next(reader)
                         for row in reader:
-                            Unilabel(*row)
+                            Unilabel(row[0])
                         
                 elif opr == "2":
                     with open('UNI-operation.csv', 'w') as f:
@@ -384,7 +431,25 @@ def auto_mode():
                     print("Invalid Operation")
                     continue
         elif OP == "2":
-            ptfile_data()
+            while True:
+                opr = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
+                if opr == "1":
+                    with open('PT-operation.csv', 'r') as f:
+                        reader = csv.reader(f)
+                        next(reader)
+                        for row in reader:
+                            print(row, row[0])
+                            auto_ptfile_data(row, row[0])
+                        
+                elif opr == "2":
+                    with open('PT-operation.csv', 'w') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(['SKU', 'Discount %','GST Type (1. Inclusive or 2. Exclusive)', 'Available Quantity', 'Purchase Type(GST or other or Leave Blank)', 'Format(e.g. SHOP PURCHASE or leave blank)', 'LT'])
+                elif opr == "0":
+                    break
+                else:
+                    print("Invalid Operation")
+                    continue
         elif OP == "0":
             break
     
