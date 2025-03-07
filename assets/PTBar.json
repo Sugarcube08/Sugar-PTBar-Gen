@@ -1,0 +1,18 @@
+{
+    "label_size_mm": [38.7, 25],  
+    "dpi": 300,  
+    "font": "arial.ttf",
+    "font_size": {
+        "brand": 40,
+        "product_name": 40,
+        "price": 35,
+        "sku": 30
+    },
+    "barcode_position_mm": [25, 20],  
+    "text_positions_mm": {
+        "brand": [5, 5],
+        "product_name": [5, 15],
+        "price": [5, 25],
+        "sku": [5, 30]
+    }
+}
