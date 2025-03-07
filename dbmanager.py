@@ -7,7 +7,7 @@ def check_file(file_path):
     if not os.path.exists(file_path):
         with open(file_path, 'w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['D. No. (Design No.)', 'SKU' , 'Product Name' , 'SIZE' , 'COLOR' , 'MRP' , 'Item Type' , 'Pattern' , 'BRAND'])
+            writer.writerow(['Design', 'SKU' , 'Product Name' , 'SIZE' , 'COLOR' , 'MRP' , 'Item Type' , 'Pattern' , 'BRAND', 'HSN CODE'])
             print('File created successfully')
         return True
     else:
@@ -61,6 +61,7 @@ if __name__ == '__main__':
                 data.append(input(f'Enter Item Type(Shirt, T-Shirt, Polo, Pants etc.): {6}: '))
                 data.append(input(f'Enter Pattern(Or Leave Empty for Plain): {7}: ').strip() or 'Plain')
                 data.append(input(f'Enter Brand(Or Leave empty to enter {brand}): {8}: ').strip() or brand)
+                data.append(input(f'Enter HSN Code: {9}: '))
                 add_data(file_path, data)
         print('Data added successfully')
     elif operation == '2':

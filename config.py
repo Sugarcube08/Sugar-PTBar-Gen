@@ -29,9 +29,8 @@ if __name__ == "__main__":
         data['Barcode Type'] = input('Enter Barcode Type: ')
         data['Location'] = input('Enter Location: ')
         data['Brand'] = input('Enter Brand: ')
-        data['HSN Code'] = input('Enter HSN Code: ')
         data['Group'] = input('Enter Group: ')
-        data['Last Serial-Number'] = input('Enter Last Serial-Number: ')
+        data['Barcode-No'] = input('Enter Last Barcode-No: ')
         print(data)
         confirm = input('Confirm Data Entry(Y/N): ').strip().lower()
         if confirm == 'y':
