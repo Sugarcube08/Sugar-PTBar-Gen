@@ -67,16 +67,16 @@ def create_UniLabel(output_pdf, product, color, size, Net_Qty, mrp, Address , ba
     text_x, text_y = 3 * mm, label_height - 13* mm
     max_width = label_width - 10 * mm
     # Add text fields
-    c.setFont("Helvetica", 5)
+    c.setFont("Courier", 8)
     auto_wrap_text(c, f"Product Code : {product}", text_x, text_y, max_width,font_size=8)
     c.drawString(text_x, text_y - 4 * mm, f"Color : {color}")
-    c.setFont("Helvetica", 12)
+    c.setFont("Courier", 12)
     c.drawString(text_x, text_y - 9 * mm, f"Size    : {size}")
-    c.setFont("Helvetica", 8)
+    c.setFont("Courier", 8)
     c.drawString(text_x, text_y - 12 * mm, f"Net Qty   : {Net_Qty}")
-    c.setFont("Helvetica-Bold", 14)
+    c.setFont("Courier-Bold", 14)
     c.drawString(text_x, text_y - 17 * mm, f"MRP   : {mrp}")
-    c.setFont("Helvetica", 10)
+    c.setFont("Courier", 10)
     auto_wrap_text(c, f"Address : {Address}", text_x, text_y - 22 * mm, max_width, font_size=8)
     # Generate and draw barcode (centered)
     barcode = code128.Code128(barcode_value, barWidth=0.15 * mm, barHeight=6 * mm)

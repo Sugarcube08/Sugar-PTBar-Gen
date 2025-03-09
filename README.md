@@ -75,7 +75,7 @@ If found, it retrieves the details and proceeds to label generation.
 
 ### 🔹 **2. Editing the Database**
 - 📌 Run `dbmanager.py` to add new product data.
-- 📊 Open `database.csv` in a spreadsheet editor for bulk edits.
+- 📊 You can choose file mode to add product data in bulk.
 
 ### 🔹 **3. Resetting Barcodes**
 - ✏️ Open `config.json` and modify the `Barcode-No` value.
