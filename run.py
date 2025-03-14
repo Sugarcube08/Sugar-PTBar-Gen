@@ -213,7 +213,7 @@ def create_ptfile(data):
     if not os.path.exists('ptfile.csv'):
         with open('ptfile.csv', 'w') as f:
             writer = csv.writer(f)
-            writer.writerow(['BarcodeNo.', 'Season', 'Group', 'HSN Code','Item Type', 'Item Detail', 'Brand', 'Sub Brand', 'Pattern', 'Design', 'Section', 'Color', 'Sub Category', 'Unit', 'Size', 'Discount %', 'MRP','Rate', 'Available Quantity', 'Amount', 'GST %',  'Purchase Type', 'Supplier Name', 'Fomate', 'LT', 'Barcode Type', 'Location'])
+            writer.writerow(['BarcodeNo.', 'Season', 'Group', 'HSN Code','Item Type', 'Item Detail', 'Brand', 'Sub Brand', 'Pattern', 'Design', 'Section', 'Color', 'Sub Category', 'Unit','Available Quantity',  'Size', 'Discount %', 'MRP','Rate', 'Amount', 'GST %',  'Purchase Type', 'Supplier Name', 'Fomate', 'LT', 'Barcode Type', 'Location'])
         with open('ptfile.csv', 'a') as f:
             writer = csv.writer(f)
             writer.writerow(data)
@@ -254,9 +254,11 @@ def rate_calculator(mrp, discount, type):
 def GST_calculator(rate, type):
     if type == "1":
         if rate < 1049:
-            return 5
+            gst = 100*5/(100+5)
+            return gst
         else:
-            return 12
+           gst = 100*12/(100+12)
+           return gst
         
     else:
         if rate < 999:
@@ -306,14 +308,14 @@ def ptfile_data(search_value):
     data.append(product.get("COLOR", "Unknown").strip() or "")
     data.append(product.get("Sub Category", "").strip() or "")
     data.append(product.get("Unit", "PCS").strip() or "PCS")
+    data.append(input("Enter Available Quantity(or leave for 1): ").strip() or "1")
     data.append(product.get("SIZE", "Unknown").strip() or "")
     data.append(input("Enter Discount %: ").strip() or "0")
-    data.append(product.get("MRP", "Unknown").strip() or "")
+    data.append(int(product.get("MRP", "Unknown").strip() or ""))
     type = input("Enter Type of GST\n1. for INCLUSIVE\n2. for EXCLUSIVE\n(Leave Leave Empty for1)\n>>> ").strip() or "1"
-    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15]), type))
-    data.append(input("Enter Available Quantity(or leave for 1): ").strip() or "1")
-    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15])))
-    data.append(GST_calculator(data[17], type))
+    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16]), type))
+    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16])))
+    data.append(GST_calculator(data[18], type))
     data.append(input("Enter Purchase Type(Or Leave of GST): ").strip() or "GST")
     data.append(config.get("Supplier Name", "Unknown"))
     data.append(input("Enter Format(Or Leave for SHOP PURCHASE): ").strip() or "SHOP PURCHASE")
@@ -324,12 +326,17 @@ def ptfile_data(search_value):
                     output_pdf="PT_labels.pdf",
                     product=data[5].upper(),
                     d_no=data[9].upper(),
-                    size=data[14].upper(),
-                    mrp=data[16],
+                    size=data[15].upper(),
+                    mrp=data[17],
                     barcode_value=data[0],
                     logo_path="assets/logo.png"  # Ensure this file exists
                 )
-    create_ptfile(data)
+    if data[14] == "1":
+        create_ptfile(data)
+    else:
+        for i in range(int(data[14])):
+            data[0] = barcode_updater()
+            create_ptfile(data)
 
 def auto_ptfile_data(row, search_value):
     csv_filename = "assets/database.csv"
@@ -352,14 +359,14 @@ def auto_ptfile_data(row, search_value):
     data.append(product.get("COLOR", "Unknown").strip() or "")
     data.append(product.get("Sub Category", "").strip() or "")
     data.append(product.get("Unit", "PCS").strip() or "PCS")
+    data.append(row[3].strip() or "1")
     data.append(product.get("SIZE", "Unknown").strip() or "")
     data.append(row[1].strip() or "0")
-    data.append(product.get("MRP", "Unknown").strip() or "")
+    data.append(int(product.get("MRP", "Unknown").strip() or ""))
     type = row[2].strip() or "1"
-    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15]), type))
-    data.append(row[3].strip() or "1")
-    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[15])))
-    data.append(GST_calculator(data[17], type))
+    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16]), type))
+    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16])))
+    data.append(GST_calculator(data[18], type))
     data.append(row[4].strip() or "GST")
     data.append(config.get("Supplier Name", "Unknown"))
     data.append(row[5].strip() or "SHOP PURCHASE")
@@ -370,12 +377,17 @@ def auto_ptfile_data(row, search_value):
                     output_pdf="PT_labels.pdf",
                     product=data[5].upper(),
                     d_no=data[9].upper(),
-                    size=data[14].upper(),
-                    mrp=data[16],
+                    size=data[15].upper(),
+                    mrp=data[17],
                     barcode_value=data[0],
                     logo_path="assets/logo.png"  # Ensure this file exists
                 )
-    create_ptfile(data)
+    if data[14] == "1":
+        create_ptfile(data)
+    else:
+        for i in range(int(data[14])):
+            data[0] = barcode_updater()
+            create_ptfile(data)
             
 def manual_mode():
       while True:
