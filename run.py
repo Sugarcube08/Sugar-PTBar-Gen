@@ -345,54 +345,93 @@ def auto_ptfile_data(row, search_value):
     print(product)
     config = load_config("assets/config.json")
     data = []
-    data.append(barcode_updater())
-    data.append(config.get("Season", "").strip() or "")
-    data.append(config.get("Group", "Unknown").strip() or "")
-    data.append(product.get("HSN CODE", "Unknown").strip() or "")
-    data.append(product.get("Item Type", "Unknown").strip() or "")
-    data.append(product.get("SKU", "Unknown").strip() or "")
-    data.append(product.get("BRAND", "Unknown").strip())
-    data.append(product.get("Sub Brand", "").strip() or "")
-    data.append(product.get("Pattern", "Unknown").strip() or "")
-    data.append(product.get("DESIGN NO.", "Unknown").strip() or "")
-    data.append(product.get("Section", "").strip() or "")
-    data.append(product.get("COLOR", "Unknown").strip() or "")
-    data.append(product.get("Sub Category", "").strip() or "")
-    data.append(product.get("Unit", "PCS").strip() or "PCS")
-    data.append(row[3].strip() or "1")
-    data.append(product.get("SIZE", "Unknown").strip() or "")
-    data.append(row[1].strip() or "0")
-    data.append(int(product.get("MRP", "Unknown").strip() or ""))
-    type = row[2].strip() or "1"
-    data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16]), type))
-    data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16])))
-    data.append(GST_calculator(data[18], type))
-    data.append(row[4].strip() or "GST")
-    data.append(config.get("Supplier Name", "Unknown"))
-    data.append(row[5].strip() or "SHOP PURCHASE")
-    data.append(row[6].strip() or "0")
-    data.append(config.get("Barcode Type", "Unknown"))
-    data.append(config.get("Location", "Unknown"))
-    create_PTLabel(
-                    output_pdf="PT_labels.pdf",
-                    product=data[5].upper(),
-                    d_no=data[9].upper(),
-                    size=data[15].upper(),
-                    mrp=data[17],
-                    barcode_value=data[0],
-                    logo_path="assets/logo.png"  # Ensure this file exists
-                )
-    if data[14] == "1":
+    
+    if row[3].strip() == "0":
+        print("Leaving Due to No inventory")
+    elif row[3].strip() == "1":
+        data.append(barcode_updater())
+        data.append(config.get("Season", "").strip() or "")
+        data.append(config.get("Group", "Unknown").strip() or "")
+        data.append(product.get("HSN CODE", "Unknown").strip() or "")
+        data.append(product.get("Item Type", "Unknown").strip() or "")
+        data.append(product.get("SKU", "Unknown").strip() or "")
+        data.append(product.get("BRAND", "Unknown").strip())
+        data.append(product.get("Sub Brand", "").strip() or "")
+        data.append(product.get("Pattern", "Unknown").strip() or "")
+        data.append(product.get("DESIGN NO.", "Unknown").strip() or "")
+        data.append(product.get("Section", "").strip() or "")
+        data.append(product.get("COLOR", "Unknown").strip() or "")
+        data.append(product.get("Sub Category", "").strip() or "")
+        data.append(product.get("Unit", "PCS").strip() or "PCS")
+        data.append(row[3].strip() or "0")
+        data.append(product.get("SIZE", "Unknown").strip() or "")
+        data.append(row[1].strip() or "0")
+        data.append(int(product.get("MRP", "Unknown").strip() or ""))
+        type = row[2].strip() or "1"
+        data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16]), type))
+        data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16])))
+        data.append(GST_calculator(data[18], type))
+        data.append(row[4].strip() or "GST")
+        data.append(config.get("Supplier Name", "Unknown"))
+        data.append(row[5].strip() or "SHOP PURCHASE")
+        data.append(row[6].strip() or "0")
+        data.append(config.get("Barcode Type", "Unknown"))
+        data.append(config.get("Location", "Unknown"))
         create_ptfile(data)
+        create_PTLabel(
+                        output_pdf="PT_labels.pdf",
+                        product=data[5].upper(),
+                        d_no=data[9].upper(),
+                        size=data[15].upper(),
+                        mrp=data[17],
+                        barcode_value=data[0],
+                        logo_path="assets/logo.png"  # Ensure this file exists
+                    )
     else:
-        for i in range(int(data[14])):
-            data[0] = barcode_updater()
+        for i in range(int(row[3].strip())):
+            data.append(barcode_updater())
+            data.append(config.get("Season", "").strip() or "")
+            data.append(config.get("Group", "Unknown").strip() or "")
+            data.append(product.get("HSN CODE", "Unknown").strip() or "")
+            data.append(product.get("Item Type", "Unknown").strip() or "")
+            data.append(product.get("SKU", "Unknown").strip() or "")
+            data.append(product.get("BRAND", "Unknown").strip())
+            data.append(product.get("Sub Brand", "").strip() or "")
+            data.append(product.get("Pattern", "Unknown").strip() or "")
+            data.append(product.get("DESIGN NO.", "Unknown").strip() or "")
+            data.append(product.get("Section", "").strip() or "")
+            data.append(product.get("COLOR", "Unknown").strip() or "")
+            data.append(product.get("Sub Category", "").strip() or "")
+            data.append(product.get("Unit", "PCS").strip() or "PCS")
+            data.append(row[3].strip() or "0")
+            data.append(product.get("SIZE", "Unknown").strip() or "")
+            data.append(row[1].strip() or "0")
+            data.append(int(product.get("MRP", "Unknown").strip() or ""))
+            type = row[2].strip() or "1"
+            data.append(rate_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16]), type))
+            data.append(amount_calculator(float(product.get("MRP", "Unknown").strip()), float(data[16])))
+            data.append(GST_calculator(data[18], type))
+            data.append(row[4].strip() or "GST")
+            data.append(config.get("Supplier Name", "Unknown"))
+            data.append(row[5].strip() or "SHOP PURCHASE")
+            data.append(row[6].strip() or "0")
+            data.append(config.get("Barcode Type", "Unknown"))
+            data.append(config.get("Location", "Unknown"))
             create_ptfile(data)
+            create_PTLabel(
+                            output_pdf="PT_labels.pdf",
+                            product=data[5].upper(),
+                            d_no=data[9].upper(),
+                            size=data[15].upper(),
+                            mrp=data[17],
+                            barcode_value=data[0],
+                            logo_path="assets/logo.png"  # Ensure this file exists
+                        )
             
 def manual_mode():
       while True:
-        OP = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
-        if OP == "1":
+        operation = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
+        if operation == "1":
             while True: 
                 data = input("Enter of Scan SKU to print or type exit to leave: ")
                 if data.lower() == "exit":
@@ -403,7 +442,7 @@ def manual_mode():
                 else:
                     print("Invalid Input")
                     continue
-        elif OP == "2":
+        elif operation == "2":
             while True:
                 flag = input("Press Enter to Scan SKU or type exit to leave: ").strip().lower()
                 if flag == "exit":
@@ -417,35 +456,35 @@ def manual_mode():
                         else:
                             print("No SKU Entered")
                             continue   
-        elif OP == "0":
+        elif operation == "0":
             break
 
 def auto_mode():
     while True:
-        OP = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
-        if OP == "1":
+        operation = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
+        if operation == "1":
             while True: 
-                opr = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
-                if opr == "1":
+                sub_operation = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
+                if sub_operation == "1":
                     with open('UNI-operation.csv', 'r') as f:
                         reader = csv.reader(f)
                         next(reader)
                         for row in reader:
                             Unilabel(row[0])
                         
-                elif opr == "2":
+                elif sub_operation == "2":
                     with open('UNI-operation.csv', 'w') as f:
                         writer = csv.writer(f)
                         writer.writerow(['SKU'])
-                elif opr == "0":
+                elif sub_operation == "0":
                     break
                 else:
                     print("Invalid Operation")
                     continue
-        elif OP == "2":
+        elif operation == "2":
             while True:
-                opr = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
-                if opr == "1":
+                sub_operation = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
+                if sub_operation == "1":
                     with open('PT-operation.csv', 'r') as f:
                         reader = csv.reader(f)
                         next(reader)
@@ -453,16 +492,16 @@ def auto_mode():
                             print(row, row[0])
                             auto_ptfile_data(row, row[0])
                         
-                elif opr == "2":
+                elif sub_operation == "2":
                     with open('PT-operation.csv', 'w') as f:
                         writer = csv.writer(f)
                         writer.writerow(['SKU', 'Discount %','GST Type (1. Inclusive or 2. Exclusive)', 'Available Quantity', 'Purchase Type(GST or other or Leave Blank)', 'Format(e.g. SHOP PURCHASE or leave blank)', 'LT'])
-                elif opr == "0":
+                elif sub_operation == "0":
                     break
                 else:
                     print("Invalid Operation")
                     continue
-        elif OP == "0":
+        elif operation == "0":
             break
     
 
