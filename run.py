@@ -2,10 +2,10 @@ import json
 import os
 import csv
 from reportlab.lib.pagesizes import mm
+from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from reportlab.graphics.barcode import code128  # Import barcode generator
-from PyPDF2 import PdfReader, PdfWriter
 
 def auto_wrap_text(canvas, text, x, y, max_width, font_size , font="Helvetica", line_spacing=2):
     """
@@ -36,7 +36,10 @@ def auto_wrap_text(canvas, text, x, y, max_width, font_size , font="Helvetica", 
     for i, line in enumerate(lines):
         canvas.drawString(x, y - (i * (font_size + line_spacing)), line)  # Draw wrapped text line
 
-
+def get_datetime_filename(base, ext):
+    """Generate a filename with current datetime for uniqueness."""
+    dt = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return f"{base}_{dt}{ext}"
 
 # DO NOT THOUCH THIS FUNCTION NEVER EVER IN THE HELL, 
 # TRESSPASSERS WILL BE SHOT DEAD
@@ -45,6 +48,9 @@ def create_UniLabel(output_pdf, product, color, size, Net_Qty, mrp, Address , ba
     """
     Creates a label PDF and appends it to output_pdf (labels.pdf)
     """
+    # Always generate a new file with a datetime-based name
+    output_pdf = get_datetime_filename('UNI_labels', '.pdf')
+
     # Label dimensions (in mm)
     label_width, label_height = 80 * mm, 55 * mm
 
@@ -94,8 +100,9 @@ def create_UniLabel(output_pdf, product, color, size, Net_Qty, mrp, Address , ba
     c.showPage()
     c.save()
 
-    # ✅ Merge temp PDF with labels.pdf
-    merge_pdfs(temp_pdf, output_pdf)
+    # ✅ Move temp PDF to output_pdf (no merging)
+    os.replace(temp_pdf, output_pdf)
+    print(f"✅ {output_pdf} created.")
 
 
 # DO NOT THOUCH THIS FUNCTION NEVER EVER IN THE HELL, 
@@ -105,6 +112,9 @@ def create_PTLabel(output_pdf, product, d_no, size, mrp, barcode_value, logo_pat
     """
     Creates a label PDF and appends it to output_pdf (labels.pdf)
     """
+    # Always generate a new file with a datetime-based name
+    output_pdf = get_datetime_filename('PT_labels', '.pdf')
+
     # Label dimensions (in mm)
     label_width, label_height = 38.7 * mm, 25 * mm
 
@@ -149,81 +159,24 @@ def create_PTLabel(output_pdf, product, d_no, size, mrp, barcode_value, logo_pat
     c.showPage()
     c.save()
 
-    # ✅ Merge temp PDF with labels.pdf
-    merge_pdfs(temp_pdf, output_pdf)
+    # ✅ Move temp PDF to output_pdf (no merging)
+    os.replace(temp_pdf, output_pdf)
+    print(f"✅ {output_pdf} created.")
 
 
-def merge_pdfs(temp_pdf, output_pdf):
-    """
-    Merges temp_pdf into output_pdf, preserving all content.
-    If output_pdf does not exist, temp_pdf is renamed to output_pdf.
-    """
-    if not os.path.exists(temp_pdf):
-        print(f"❌ Error: {temp_pdf} does not exist. Skipping merge.")
-        return
+def create_ptfile(data, ptfile_path=None):
+    # Always generate a new file with a datetime-based name if not provided
+    if ptfile_path is None:
+        ptfile_path = get_datetime_filename('ptfile', '.csv')
+    with open(ptfile_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['BarcodeNo.', 'Season', 'Group', 'HSN Code','Item Type', 'Item Detail', 'Brand', 'Sub Brand', 'Pattern', 'Design', 'Section', 'Color', 'Sub Category', 'Unit','Available Quantity',  'Size', 'Discount %', 'MRP','Rate', 'Amount', 'GST %',  'Purchase Type', 'Supplier Name', 'Fomate', 'LT', 'Barcode Type', 'Location', 'Invoice No', 'Date'])
+        writer.writerow(data)
+    return ptfile_path
 
-    # ✅ If labels.pdf does NOT exist, rename temp.pdf to labels.pdf
-    if not os.path.exists(output_pdf):
-        os.rename(temp_pdf, output_pdf)
-        print(f"✅ {output_pdf} created from {temp_pdf}")
-        return
-
-    # ✅ If labels.pdf exists, merge temp.pdf into it
-    writer = PdfWriter()
-
-    # Read and keep all pages from labels.pdf
-    existing_reader = PdfReader(output_pdf)
-    for page in existing_reader.pages:
-        writer.add_page(page)
-
-    # Read and add new pages from temp.pdf
-    new_reader = PdfReader(temp_pdf)
-    for page in new_reader.pages:
-        writer.add_page(page)
-
-    # ✅ Save the merged PDF correctly
-    with open(output_pdf, "wb") as merged_file:
-        writer.write(merged_file)
-
-    print(f"✅ Merged {temp_pdf} into {output_pdf}")
-
-    # ✅ Delete temp file after merging
-    os.remove(temp_pdf)
-
-def Unilabel(data):
-    config = load_config("assets/config.json")
-    product = search_csv("assets/database.csv", "SKU", data)
-    if product:
-        create_UniLabel(
-                        output_pdf="UNI_labels.pdf",
-                        product=product.get("SKU", "Unknown"),
-                        color=product.get("COLOR", "Unknown").upper(),
-                        size=product.get("SIZE", "Unknown").upper(),
-                        Net_Qty=1,
-                        mrp=product.get("MRP", "Unknown"),
-                        Address=config.get("Address", "Unknown"),
-                        barcode_value=product.get("SKU", "Unknown").strip(),
-                        logo_path="assets/logo.png"  # Ensure this file exists
-                    )
-    else:
-        print("Product Not Found")
-        return
-
-def create_ptfile(data):
-    if not os.path.exists('ptfile.csv'):
-        with open('ptfile.csv', 'w') as f:
-            writer = csv.writer(f)
-            writer.writerow(['BarcodeNo.', 'Season', 'Group', 'HSN Code','Item Type', 'Item Detail', 'Brand', 'Sub Brand', 'Pattern', 'Design', 'Section', 'Color', 'Sub Category', 'Unit','Available Quantity',  'Size', 'Discount %', 'MRP','Rate', 'Amount', 'GST %',  'Purchase Type', 'Supplier Name', 'Fomate', 'LT', 'Barcode Type', 'Location'])
-        with open('ptfile.csv', 'a') as f:
-            writer = csv.writer(f)
-            writer.writerow(data)
-    
-    else:  
-        with open('ptfile.csv', 'a') as f:
-            writer = csv.writer(f)
-            writer.writerow(data)
-
-
+def date_time():
+    """Returns the current date and time in 'dd-mm-yyyy HH:MM:SS' format."""
+    return datetime.now().strftime("%d-%m-%Y %H:%M:%S")
   
 def load_config(config_path):
     """Loads brand configuration from JSON file."""
@@ -238,10 +191,12 @@ def rate_calculator(mrp, discount, type):
     if type == "1":
         amount = mrp - (mrp * (discount / 100))
         if amount < 1049:
-            rate = amount - (amount * 0.05)
+            gst = 100*5/(100+5)
+            rate = amount - (amount * (gst/100))
             return rate 
         else:
-            rate = amount - (amount * 0.12)
+            gst = 100*12/(100+12)
+            rate = amount - (amount * (gst/100))
             return rate
     else:
         amount = mrp - (mrp * (discount / 100))
@@ -253,12 +208,10 @@ def rate_calculator(mrp, discount, type):
     
 def GST_calculator(rate, type):
     if type == "1":
-        if rate < 1049:
-            gst = 100*5/(100+5)
-            return gst
+        if rate < 1049:           
+            return 5
         else:
-           gst = 100*12/(100+12)
-           return gst
+           return 12
         
     else:
         if rate < 999:
@@ -308,7 +261,7 @@ def ptfile_data(search_value):
     data.append(product.get("COLOR", "Unknown").strip() or "")
     data.append(product.get("Sub Category", "").strip() or "")
     data.append(product.get("Unit", "PCS").strip() or "PCS")
-    data.append(input("Enter Available Quantity(or leave for 1): ").strip() or "1")
+    data.append("1")
     data.append(product.get("SIZE", "Unknown").strip() or "")
     data.append(input("Enter Discount %: ").strip() or "0")
     data.append(int(product.get("MRP", "Unknown").strip() or ""))
@@ -322,6 +275,8 @@ def ptfile_data(search_value):
     data.append(input("Enter LT(Or Leave for 0): ").strip() or "0")
     data.append(config.get("Barcode Type", "Unknown"))
     data.append(config.get("Location", "Unknown"))
+    data.append(input("Enter Invoice No: ").strip() or "0")
+    data.append(date_time())
     create_PTLabel(
                     output_pdf="PT_labels.pdf",
                     product=data[5].upper(),
@@ -339,6 +294,7 @@ def ptfile_data(search_value):
             create_ptfile(data)
 
 def auto_ptfile_data(row, search_value):
+    # Search for product in CSV file
     csv_filename = "assets/database.csv"
     search_column = "SKU"
     product = search_csv(csv_filename, search_column, search_value)
@@ -346,9 +302,17 @@ def auto_ptfile_data(row, search_value):
     config = load_config("assets/config.json")
     data = []
     
-    if row[3].strip() == "0":
+    # Error handling for row[3] (Available Quantity)
+    available_qty_str = row[3].strip() if len(row) > 3 else ""
+    try:
+        available_qty = int(available_qty_str)
+    except (ValueError, TypeError):
+        print(f"Invalid or missing Available Quantity: '{available_qty_str}'. Skipping row: {row}")
+        return
+
+    if available_qty == 0:
         print("Leaving Due to No inventory")
-    elif row[3].strip() == "1":
+    elif available_qty == 1:
         data.append(barcode_updater())
         data.append(config.get("Season", "").strip() or "")
         data.append(config.get("Group", "Unknown").strip() or "")
@@ -363,7 +327,7 @@ def auto_ptfile_data(row, search_value):
         data.append(product.get("COLOR", "Unknown").strip() or "")
         data.append(product.get("Sub Category", "").strip() or "")
         data.append(product.get("Unit", "PCS").strip() or "PCS")
-        data.append(row[3].strip() or "0")
+        data.append("1")
         data.append(product.get("SIZE", "Unknown").strip() or "")
         data.append(row[1].strip() or "0")
         data.append(int(product.get("MRP", "Unknown").strip() or ""))
@@ -377,6 +341,8 @@ def auto_ptfile_data(row, search_value):
         data.append(row[6].strip() or "0")
         data.append(config.get("Barcode Type", "Unknown"))
         data.append(config.get("Location", "Unknown"))
+        data.append(row[7].strip() or "0")
+        data.append(date_time())
         create_ptfile(data)
         create_PTLabel(
                         output_pdf="PT_labels.pdf",
@@ -388,7 +354,7 @@ def auto_ptfile_data(row, search_value):
                         logo_path="assets/logo.png"  # Ensure this file exists
                     )
     else:
-        for i in range(int(row[3].strip())):
+        for i in range(available_qty):
             data.append(barcode_updater())
             data.append(config.get("Season", "").strip() or "")
             data.append(config.get("Group", "Unknown").strip() or "")
@@ -417,6 +383,8 @@ def auto_ptfile_data(row, search_value):
             data.append(row[6].strip() or "0")
             data.append(config.get("Barcode Type", "Unknown"))
             data.append(config.get("Location", "Unknown"))
+            data.append(row[7].strip() or "0")
+            data.append(date_time())
             create_ptfile(data)
             create_PTLabel(
                             output_pdf="PT_labels.pdf",
@@ -427,7 +395,26 @@ def auto_ptfile_data(row, search_value):
                             barcode_value=data[0],
                             logo_path="assets/logo.png"  # Ensure this file exists
                         )
-            
+
+def Unilabel(data):
+    config = load_config("assets/config.json")
+    product = search_csv("assets/database.csv", "SKU", data)
+    if product:
+        create_UniLabel(
+            output_pdf=None,  # output_pdf is ignored, always datetime-named
+            product=product.get("SKU", "Unknown"),
+            color=product.get("COLOR", "Unknown").upper(),
+            size=product.get("SIZE", "Unknown").upper(),
+            Net_Qty=1,
+            mrp=product.get("MRP", "Unknown"),
+            Address=config.get("Address", "Unknown"),
+            barcode_value=product.get("SKU", "Unknown").strip(),
+            logo_path="assets/logo.png"  # Ensure this file exists
+        )
+    else:
+        print("Product Not Found")
+        return
+
 def manual_mode():
       while True:
         operation = input("Enter Operation to Do\n1. for UNI-Barcode\n2. for PT-Barcode\n0. for Exit \n>>> ")
@@ -466,16 +453,21 @@ def auto_mode():
             while True: 
                 sub_operation = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
                 if sub_operation == "1":
-                    with open('UNI-operation.csv', 'r') as f:
+                    file = input("Enter the file name to upload: ")
+                    with open(file, 'r') as f:
                         reader = csv.reader(f)
                         next(reader)
                         for row in reader:
+                            # Always generate a new UNI label file for each row
                             Unilabel(row[0])
-                        
+                
                 elif sub_operation == "2":
-                    with open('UNI-operation.csv', 'w') as f:
+                    # Auto-renaming logic for UNI-operation.csv using datetime
+                    filename = get_datetime_filename('UNI-operation', '.csv')
+                    with open(filename, 'w', newline='') as f:
                         writer = csv.writer(f)
                         writer.writerow(['SKU'])
+                    print(f"Example CSV saved as: {filename}")
                 elif sub_operation == "0":
                     break
                 else:
@@ -485,17 +477,45 @@ def auto_mode():
             while True:
                 sub_operation = input("Choose Operation\n1. for Upload file\n2. for Download Example CSV\n0. for Exit\n>>> ")
                 if sub_operation == "1":
-                    with open('PT-operation.csv', 'r') as f:
+                    file = input("Enter the file name to upload: ")
+                    impression_rows = []
+                    impression_header = None
+                    with open(file, 'r') as f:
                         reader = csv.reader(f)
-                        next(reader)
+                        header = next(reader)
+                        impression_header = header + ['REMARK']
                         for row in reader:
-                            print(row, row[0])
-                            auto_ptfile_data(row, row[0])
-                        
+                            error_remark = ''
+                            # Check for essential fields (columns with *)
+                            essentials_idx = [i for i, col in enumerate(header) if '*' in col]
+                            missing_essentials = [header[i] for i in essentials_idx if len(row) <= i or not row[i].strip()]
+                            if missing_essentials:
+                                error_remark = f"Missing essential fields: {', '.join(missing_essentials)}"
+                                impression_rows.append(row + [error_remark])
+                                continue
+                            try:
+                                print(row, row[0])
+                                auto_ptfile_data(row, row[0])
+                            except Exception as e:
+                                error_remark = f"Processing error: {str(e)}"
+                                impression_rows.append(row + [error_remark])
+                                continue
+                    # Write impression file if any errors
+                    if impression_rows:
+                        impression_filename = get_datetime_filename('import_impression', '.csv')
+                        with open(impression_filename, 'w', newline='') as impf:
+                            writer = csv.writer(impf)
+                            writer.writerow(impression_header)
+                            writer.writerows(impression_rows)
+                        print(f"Impression file generated: {impression_filename}")
+                
                 elif sub_operation == "2":
-                    with open('PT-operation.csv', 'w') as f:
+                    # Auto-renaming logic for PT-operation.csv using datetime
+                    filename = get_datetime_filename('PT-operation', '.csv')
+                    with open(filename, 'w', newline='') as f:
                         writer = csv.writer(f)
-                        writer.writerow(['SKU', 'Discount %','GST Type (1. Inclusive or 2. Exclusive)', 'Available Quantity', 'Purchase Type(GST or other or Leave Blank)', 'Format(e.g. SHOP PURCHASE or leave blank)', 'LT'])
+                        writer.writerow(['SKU*', 'Discount %*','GST Type (1. Inclusive or 2. Exclusive)*', 'Available Quantity*', 'Purchase Type(GST or other or Leave Blank)', 'Format(e.g. SHOP PURCHASE or leave blank)', 'LT', 'Invoice No*'])
+                    print(f"Example CSV saved as: {filename}")
                 elif sub_operation == "0":
                     break
                 else:
